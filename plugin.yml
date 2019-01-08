@@ -1,0 +1,10 @@
+name: DonorRewards
+main: work.torp.donorrewards.Main
+version: 1.0
+api-version: 1.13
+Softdepend: [Vault]
+commands:
+   donor:
+      description: Runs the donor commands
+      usage: /donor
+      aliases: [donorrewards]
