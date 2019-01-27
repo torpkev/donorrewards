@@ -29,13 +29,15 @@
 #         # Warning: Be aware of your ToS before offering in-game cash in exchange for donations
 #         cash: 200
 #         # items - This is a list of items, with a count to give to the player.  These item names should match the internal
-#         # minecraft names, any mis-typed will be disregarded.  The count is the amount of items to give.  The true/false tag flag
+#         # minecraft names, any mis-typed will be disregarded.  The name option is an optional field for a more user friendly
+#         # name to be entered for the item.  The count is the amount of items to give.  The true/false tag flag
 #         # is intended for non-block items such as villager eggs, elytra etc. Each item can be tagged.  If the tag is set to true, 
 #         # the item will have the players name, donation rank and date added to the item lore.  If the item is a block, if the item 
 #         # is placed and then broken the tag will be lost.  
 #         # Make sure the player has enough free space in their inventory before issuing this donor command.
 #         items: 
 #           VILLAGER_SPAWN_EGG: 
+#             name: Villager Spawn Egg    # name is optional
 #             count: 2
 #             tag: true
 #         # spawners - This is a list of mob spawners to give the player.  The type should match the entity name within minecraft
@@ -60,9 +62,12 @@ rank:
           - Admin
           - Mod
           - Member
+          - MediumDonor
+          - LargeDonor
         cash: 200
         items: 
           VILLAGER_SPAWN_EGG:
+            name: Villager Spawn Egg
             count: 2
             tag: true
         spawners:
@@ -81,6 +86,8 @@ rank:
           - Admin
           - Mod
           - Member
+          - SmallDonor
+          - LargeDonor
         cash: 500
         items: 
           DIAMOND: 
@@ -107,6 +114,8 @@ rank:
           - Admin
           - Mod
           - Member
+          - SmallDonor
+          - MediumDonor
         cash: 1000
         items: 
           DIAMOND:

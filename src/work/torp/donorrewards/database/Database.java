@@ -47,7 +47,7 @@ public abstract class Database {
     public void initialize(){
         connection = getSQLConnection();
         try{
-            PreparedStatement ps = connection.prepareStatement("SELECT COUNT(*) FROM placed_blocks");
+            PreparedStatement ps = connection.prepareStatement("SELECT COUNT(*) FROM donation");
             ResultSet rs = ps.executeQuery();
             close(ps,rs);
    
@@ -218,18 +218,30 @@ public abstract class Database {
             	try
             	{
             		UnclaimedItem ui = new UnclaimedItem();
-            		ui.setItemID(Convert.IntegerFromString(rs.getString("item_id")));
-            		ui.setDonationID(Convert.IntegerFromString(rs.getString("donation_id")));
-            		ui.setUUID(rs.getString("uuid"));
             		Material m = Convert.StringToMaterial(rs.getString("item_name"));
+            		boolean btag = false;
+            		if (rs.getString("tag").equalsIgnoreCase("true"))
+            		{
+            			btag = true;
+            		}
             		if (m != null)
             		{
-            			ui.setMaterial(m);
+            			String itemname = rs.getString("name");
+            			if (itemname.equals("null"))
+            			{
+            				itemname = "";
+            			}
+            			ui.set(
+            					Convert.IntegerFromString(rs.getString("item_id")), 
+            					Convert.IntegerFromString(rs.getString("donation_id")), 
+            					rs.getString("uuid"), 
+            					itemname, 
+            					m, 
+            					Convert.IntegerFromString(rs.getString("item_cnt")), 
+            					btag
+            			);
+                		Main.getInstance().AddUnclaimedItem(ui);
             		}
-            		ui.setItemCount(Convert.IntegerFromString(rs.getString("item_cnt")));
-                	ui.setTagItem(rs.getBoolean("tag"));
-                	
-                	Main.getInstance().AddUnclaimedItem(ui);
             	}
             	catch (Exception ex)
             	{
@@ -305,16 +317,12 @@ public abstract class Database {
             	try
             	{
             		UnclaimedSpawner us = new UnclaimedSpawner();
-            		us.setDonationID(Convert.IntegerFromString(rs.getString("donation_id")));
-            		us.setUUID(rs.getString("uuid"));
             		EntityType et = Convert.StringToEntityType(rs.getString("entity_type"));
             		if (et != null)
             		{
-            			us.setEntityType(et);
+                		us.set(Convert.IntegerFromString(rs.getString("donation_id")), Convert.IntegerFromString(rs.getString("donation_id")), rs.getString("uuid"), et, Convert.IntegerFromString(rs.getString("item_cnt")));
+                    	Main.getInstance().AddUnclaimedSpawner(us);
             		}
-            		us.setSpawnerCount(Convert.IntegerFromString(rs.getString("item_cnt")));
-
-                	Main.getInstance().AddUnclaimedSpawner(us);
             	}
             	catch (Exception ex)
             	{
@@ -353,6 +361,7 @@ public abstract class Database {
             			PlacedSpawner psp = new PlacedSpawner();
             			psp.setPlacedSpawnerID(Convert.IntegerFromString(rs.getString("placed_spawner_id")));
             			psp.setSpawnerID(Convert.IntegerFromString(rs.getString("spawner_id")));
+            			psp.setEntityType(EntityType.valueOf(rs.getString("entity_type")));
             			psp.setPlacedByUUID(rs.getString("placed_by_uuid"));
             			psp.setPlacedLocation(loc);
             			try {
@@ -518,7 +527,7 @@ public abstract class Database {
         }
         return group_id;
     } 
-    public int saveItem(int donation_id, String uuid, String item_name, int item_cnt, boolean tag) {
+    public int saveItem(int donation_id, String uuid, String name, String item_name, int item_cnt, boolean tag) {
     	int item_id = -1;
         
     	Connection conn = null;
@@ -529,16 +538,18 @@ public abstract class Database {
         try {
         	conn = getSQLConnection();
 
-        	sql = "INSERT INTO item (item_id, donation_id, uuid, item_name, item_cnt, tag, claimed, claimed_by_uuid, claimed_dtime) VALUES (" +
+        	sql = "INSERT INTO item (item_id, donation_id, uuid, name, item_name, item_cnt, tag, claimed, claimed_by_uuid, claimed_dtime) VALUES (" +
         			"NULL, " + // Inserting null as it is an auto-incrementing value
         			Integer.toString(donation_id) + ", " +
         			"'" + uuid + "', " +
+        			"'" + name + "', " + 
         			"'" + item_name + "', " + 
         			Integer.toString(item_cnt) + ", " +
         			"'" + Boolean.toString(tag) + "', " + 
         			"0, NULL, NULL" +
         			");";
 
+        	Alert.DebugLog("Database", "saveItem", "SQL: " + sql);
             psDb = conn.prepareStatement(sql);
             psDb.executeUpdate();
 
@@ -659,7 +670,7 @@ public abstract class Database {
         }
         return spawner_id;
     } 
-    public int savePlacedSpawner(int spawner_id, String uuid, Location spawner_loc) {
+    public int savePlacedSpawner(EntityType etype, int spawner_id, String uuid, Location spawner_loc) {
     	int placed_spawner_id = -1;
         
     	Connection conn = null;
@@ -670,9 +681,10 @@ public abstract class Database {
         try {
         	conn = getSQLConnection();
 
-        	sql = "INSERT INTO placed_spawner (placed_spawner_id, spawner_id, placed_by_uuid, world, x, y, z, placed_dtime, is_removed) VALUES (" +
+        	sql = "INSERT INTO placed_spawner (placed_spawner_id, spawner_id, entity_type, placed_by_uuid, world, x, y, z, placed_dtime, is_removed) VALUES (" +
         			"NULL, " + // Inserting null as it is an auto-incrementing value
-        			Integer.toString(spawner_id) + ", " +
+        			Integer.toString(spawner_id) + ", " + 
+        			"'" + etype.name() + "', " +
         			"'" + uuid + "', " +
         			"'" + spawner_loc.getWorld().getName() + "', " + 
         			Integer.toString(spawner_loc.getBlockX()) + ", " +
@@ -709,7 +721,7 @@ public abstract class Database {
         }
         return placed_spawner_id;
     } 
-    public int saveBrokenSpawner(int spawner_id, String uuid, Location spawner_loc) {
+    public int saveBrokenSpawner(EntityType etype, int spawner_id, String uuid, Location spawner_loc) {
     	int broken_spawner_id = -1;
         
     	Connection conn = null;
@@ -721,13 +733,14 @@ public abstract class Database {
         try {
         	conn = getSQLConnection();
 
-        	sql = "UPDATE placed_spawner SET is_removed = 1 WHERE spawner_id = " + Integer.toString(spawner_id) + "; ";
+        	sql = "UPDATE placed_spawner SET is_removed = 1 WHERE entity_type = '" + etype.name() + "' AND x = " + Integer.toString(spawner_loc.getBlockX()) + " AND y = " + Integer.toString(spawner_loc.getBlockY()) + " AND z = " + Integer.toString(spawner_loc.getBlockZ()) + "; ";
             psRem = conn.prepareStatement(sql);
             psRem.executeUpdate();
             
-        	sql = "INSERT INTO broken_spawner (broken_spawner_id, spawner_id, broken_by_uuid, world, x, y, z, broken_dtime) VALUES (" +
+        	sql = "INSERT INTO broken_spawner (broken_spawner_id, spawner_id, entity_type, broken_by_uuid, world, x, y, z, broken_dtime) VALUES (" +
         			"NULL, " + // Inserting null as it is an auto-incrementing value
         			Integer.toString(spawner_id) + ", " +
+        			"'" + etype.name() + "', " +
         			"'" + uuid + "', " +
         			"'" + spawner_loc.getWorld().getName() + "', " + 
         			Integer.toString(spawner_loc.getBlockX()) + ", " +
@@ -764,7 +777,7 @@ public abstract class Database {
             }
         }
         return broken_spawner_id;
-    }     
+    }         
     public boolean claimCash(int cash_id, String uuid)
     {
     	boolean claimed = false;
@@ -915,4 +928,8 @@ public abstract class Database {
         }
         return claimed;
     }    
+
+
+
+
 }

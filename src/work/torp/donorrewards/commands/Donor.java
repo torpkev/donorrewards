@@ -1,6 +1,6 @@
 package work.torp.donorrewards.commands;
 
-import java.util.Map;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -15,8 +15,7 @@ import work.torp.donorrewards.helper.CommandFunctions;
 import work.torp.donorrewards.helper.Debug;
 import work.torp.donorrewards.Main;
 import work.torp.donorrewards.alerts.Alert;
-import work.torp.donorrewards.classes.Donation;
-import work.torp.donorrewards.classes.Rank;
+import work.torp.donorrewards.classes.ClaimGUI;
 
 public class Donor implements CommandExecutor {
 	@Override
@@ -69,7 +68,7 @@ public class Donor implements CommandExecutor {
 				fullargs.append(o.toString());
 				fullargs.append(" ");
 			}
-			Alert.DebugLog("Domain", "onCommand", "/domain command run by " + sender.getName() + " with arguments: " + fullargs);
+			Alert.DebugLog("Donor", "onCommand", "/domain command run by " + sender.getName() + " with arguments: " + fullargs);
 		}
 		if (iargs >= 1)
 		{
@@ -107,7 +106,15 @@ public class Donor implements CommandExecutor {
 					case "claim" :
 						if (hasClaim)
 						{
-							// TODO: Claim donor items
+							if (playerSent)
+							{
+								Player player = (Player) sender;
+								ClaimGUI gui = new ClaimGUI();
+								player.openInventory(gui.getInventory()); // display the GUI
+							} else {
+								Alert.Sender("You must be a logged in player to send the claim command", sender, true);
+								Alert.DebugLog("Donor", "onCommand", "Console tried to send /donor claim command: /donor " + fullargs);
+							}
 						} else {
 							Alert.Sender("You do not have permission to run this command", sender, true);
 							Alert.DebugLog("Donor", "onCommand", "Invalid permissions for /donor command run by " + sender.getName() + ": /donor " + fullargs);
@@ -116,105 +123,42 @@ public class Donor implements CommandExecutor {
 					case "give" :
 						if (iargs >= 2)
 						{
-							String playername = "";
+							UUID uuid = null;
 							String rank = "";
+							OfflinePlayer oplayer = null;
 							if (args[1] != null)
 							{
-								playername = args[1].toString();
+								try{
+								    uuid = UUID.fromString(args[1].toString());
+								    Alert.DebugLog("Command", "Give", "UUID: " + uuid.toString());
+								    oplayer = Bukkit.getOfflinePlayer(uuid);
+								    if (oplayer != null)
+								    {
+								    	Alert.DebugLog("Donor", "Give", "Found player: " + oplayer.getName());
+								    } else {
+								    	Alert.DebugLog("Donor", "Give", "Unable to find player: " + uuid.toString());
+								    }
+								} catch (IllegalArgumentException exception){
+									Alert.Sender("Unable to give donor reward.  Invalid player UUID", sender, true);
+									return false;
+								}
+							} else {
+								Alert.DebugLog("Donor", "Give", "no arg 1");
 							}
 							if (args[2] != null)
 							{
 								rank = args[2].toString();
+								Alert.DebugLog("Donor", "Give", "Rank found: " + rank);
 							}
 							if (hasGive)
 							{
-								OfflinePlayer oplayer = Bukkit.getPlayer(playername);
-								if (oplayer != null) {
-									if (!rank.equals(""))
-									{
-										boolean rankExists = false;
-										Rank r = new Rank();
-										for (Map.Entry<String, Rank> entry : Main.hmRanks.entrySet()) {
-											if (entry.getKey().equalsIgnoreCase(args[2].toString()))
-											{
-												rankExists = true;
-												r = entry.getValue();
-											}
-										}
-										if (rankExists)
-										{
-											if (r != null)
-											{
-												Donation d = CommandFunctions.saveDonation(oplayer.getUniqueId().toString(), rank);
-												if (d != null)
-												{
-													boolean blnMessage = false;
-													boolean blnGroups = false;
-													boolean blnCash = false;
-													boolean blnItems = false;
-													boolean blnSpawners = false;
-													blnMessage = CommandFunctions.saveMessage(d);
-													if (Main.getInstance().HasVault())
-													{
-														blnGroups = CommandFunctions.saveGroups(d);
-														blnCash = CommandFunctions.saveCash(d);
-													} else {
-														blnGroups = true;
-														blnCash = true;
-													}
-													blnItems = CommandFunctions.saveItems(d);
-													blnSpawners = CommandFunctions.saveSpawners(d);
-													if (!blnMessage)
-													{
-														Alert.DebugLog("Donor", "Give", "Unable to save message for " + oplayer.getName());
-													}
-													if (!blnGroups)
-													{
-														Alert.DebugLog("Donor", "Give", "Unable to save groups for " + oplayer.getName());
-													}
-													if (!blnCash)
-													{
-														Alert.DebugLog("Donor", "Give", "Unable to save cash reward for " + oplayer.getName());
-													}
-													if (!blnItems)
-													{
-														Alert.DebugLog("Donor", "Give", "Unable to save reward items for " + oplayer.getName());
-													}
-													if (!blnSpawners)
-													{
-														Alert.DebugLog("Donor", "Give", "Unable to save reward spawners for " + oplayer.getName());
-													}
-													Player p = Bukkit.getPlayer(oplayer.getUniqueId());
-													if (p != null)
-													{
-														Alert.Player(r.getPlayerMessage().replace("<%player%>", p.getName()), p, true);
-														Bukkit.broadcastMessage(r.getBroadcastMessage().replaceAll("<%player%>", p.getName()));
-													}
-												} else {
-													Alert.Log("Donor.Give", "Unable to save donation to " + rank + " for " + oplayer.getName());
-												}
-											} else {
-												Alert.Log("Donor.Give", "Unable to save donation to " + rank + " for " + oplayer.getName() + " - Rank not found");
-												Alert.Sender("Unable to save donation to " + rank + " for " + oplayer.getName() + " - Rank not found", sender, true);
-											}
-										} else {
-											Alert.Sender("Invalid rank - Unable to process donor reward", sender, true);
-											Alert.DebugLog("Donor", "onCommand", "Invalid rank - Unable to process.  Command run by " + sender.getName() + ": /donor " + fullargs);
-										}
-									} else {
-										Alert.Sender("Invalid rank - Unable to process donor reward", sender, true);
-										Alert.DebugLog("Donor", "onCommand", "Invalid rank - Unable to process.  Command run by " + sender.getName() + ": /donor " + fullargs);
-									}
-								} else {
-									Alert.Sender("Invalid player - Unable to process donor reward", sender, true);
-									Alert.DebugLog("Donor", "onCommand", "Invalid player - Unable to process.  Command run by " + sender.getName() + ": /donor " + fullargs);
-								}							
+								CommandFunctions.giveOfflineReward(oplayer, rank, sender, fullargs.toString());
 							} else {
 								Alert.Sender("You do not have permission to run this command", sender, true);
 								Alert.DebugLog("Donor", "onCommand", "Invalid permissions for /donor command run by " + sender.getName() + ": /donor " + fullargs);
 							}
 						} else {
-							Alert.Sender("Usage: /donor give " + ChatColor.AQUA + "<player> <rank>", sender, true);
+							Alert.Sender("Usage: /donor give " + ChatColor.AQUA + "<uuid> <rank>", sender, true);
 							Alert.DebugLog("Donor", "onCommand", "Command sent by " + sender.getName() + " without all arguments: /donor " + fullargs);
 						}
 						break;
@@ -227,7 +171,7 @@ public class Donor implements CommandExecutor {
 					Alert.Sender("Donor Rewards Usage:", sender, true);
 					if (hasGive)
 					{
-						Alert.Sender(ChatColor.BOLD + "Give donor items: " + ChatColor.RESET + "/donor give " + ChatColor.AQUA + " <player> <rank>", sender, true);
+						Alert.Sender(ChatColor.BOLD + "Give donor items: " + ChatColor.RESET + "/donor give " + ChatColor.AQUA + " <uuid> <rank>", sender, true);
 						Alert.Sender(ChatColor.BOLD + "List donor ranks: " + ChatColor.RESET + "/donor list", sender, true);
 					}
 					if (hasClaim)

@@ -23,10 +23,11 @@ Permissions:
 donorrewards.give  - Allows the player to run the /donor give and /donor list commands
 donorrewards.claim - Allows a player to claim a donation item (assign to all members)
 donorrewards.debug - Allows the player to toggle debug mode and view the config in the console
+donorrewards.spawner.break - Allows the player to break the spawner and return it to inventory
 
 Usage:
-/donor give <player> <rank>  -  Give a donor rank and associated items/groups.
-/donor list                  -  Lists the available donor ranks
-/donor claim                 -  Allows the player to claim their donor rank/items/groups
-/donor debug                 -  Toggles the debug logging to console and logfile   
-/donor debugconfig           -  Displays the configuration data in the console
+/donor give <player uuid> <rank>  	-  Give a donor rank and associated items/groups.
+/donor list                  		-  Lists the available donor ranks
+/donor claim                 		-  Allows the player to claim their donor rank/items/groups
+/donor debug                 		-  Toggles the debug logging to console and logfile   
+/donor debugconfig           		-  Displays the configuration data in the console

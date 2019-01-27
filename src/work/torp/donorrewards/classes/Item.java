@@ -3,9 +3,18 @@ package work.torp.donorrewards.classes;
 import org.bukkit.Material;
 
 public class Item {
+	String name;
 	Material material;
 	int itemCnt;
 	boolean tagItem;
+	public String getName()
+	{
+		return name;
+	}
+	public void setName(String name)
+	{
+		this.name = name;
+	}
     public Material getMaterial() {
         return material;
     }

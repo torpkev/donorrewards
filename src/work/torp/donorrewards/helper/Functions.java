@@ -1,6 +1,5 @@
 package work.torp.donorrewards.helper;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.bukkit.entity.Player;
 
@@ -13,26 +12,35 @@ import work.torp.donorrewards.alerts.Alert;
 public class Functions {
 	public static void removeGroups(Player player, List<String> exemptList)
 	{
-		List<String> groups = new ArrayList<String>();
 		Permission perm = Main.getInstance().getPermission(); // Create a new Permission object
-		for (String keep : exemptList) {
-			if (perm.playerInGroup(player, keep)) {
-				groups.add(keep);
-			}
-		}
+		Alert.DebugLog("Functions", "removeGroups", "Checking " + player.getDisplayName());
 		for (String group : perm.getPlayerGroups(null, player)) { // Loop through all groups the player is in
-    		perm.playerRemoveGroup(null, player, group); // Remove the player from the group
+			Alert.DebugLog("Functions", "removeGroups", "Group: " + group);
+			boolean blnRemove = true;
+			for (String keep : exemptList) {
+				Alert.DebugLog("Functions", "removeGroups", "Keep List: " + keep);
+				if (group.equalsIgnoreCase(keep))
+				{
+					blnRemove = false;
+				}
+			}
+			if (blnRemove)
+			{
+				Alert.DebugLog("Functions", "removeGroups", "Remove Group: " + group);
+				perm.playerRemoveGroup(null, player, group); // Remove the player from the group
+			}
 	    }
-		for (String g : groups)
-		{
-			perm.playerAddGroup(player, g);
-		}
 	}
 	public static void addToGroup(Player player, String group)
 	{
+		Alert.DebugLog("Functions", "addToGroup", "Started: " + player.getDisplayName() + " " + group);
 		Permission perm = Main.getInstance().getPermission(); // Create a new Permission object
-		if (!perm.playerInGroup(player, group)) {
-			perm.playerAddGroup(player, group);
+		Alert.DebugLog("Functions", "addToGroup", "Vault Permission object created");
+		if (!Check.inGroup(player, group)) {
+			Alert.DebugLog("Functions", "addToGroup", "Player is not already in group");
+			perm.playerAddGroup(null, player, group);
+		} else {
+			Alert.DebugLog("Functions", "addToGroup", "Player is already in group");
 		}
 	}
 	public static void payPlayer(Player player, int amt)

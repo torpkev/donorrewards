@@ -3,7 +3,9 @@ package work.torp.donorrewards.helper;
 import java.util.List;
 import org.bukkit.entity.Player;
 
+import net.milkbowl.vault.permission.Permission;
 import work.torp.donorrewards.Main;
+import work.torp.donorrewards.alerts.Alert;
 import work.torp.donorrewards.classes.UnclaimedCash;
 import work.torp.donorrewards.classes.UnclaimedGroup;
 import work.torp.donorrewards.classes.UnclaimedItem;
@@ -109,5 +111,22 @@ public class Check {
 			}
 		}
 		return returnVal;
+	}
+	public static boolean inGroup(Player player, String group)
+	{
+		boolean ret = false;
+		Alert.DebugLog("Check", "inGroup", "Checking " + player.getDisplayName() + " - " + group);
+		Permission perm = Main.getInstance().getPermission(); // Create a new Permission object
+		String[] groups = perm.getPlayerGroups(null, player);
+		for (String g : groups)
+		{
+			if (g.equalsIgnoreCase(group))
+			{
+				Alert.DebugLog("Check", "inGroup", "User is in group");
+				ret = true;
+			}
+		}
+		Alert.DebugLog("Check", "inGroup", "Check complete.  Result = " + Boolean.toString(ret));
+		return ret;
 	}
 }

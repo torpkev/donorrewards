@@ -17,49 +17,55 @@ import work.torp.donorrewards.helper.Provide;
 public class PlayerEvents implements Listener {
 	@EventHandler
 	public void onPlayerJoin(PlayerJoinEvent evt) {
-		String uuid = evt.getPlayer().getUniqueId().toString();
-		boolean hasUnclaimedGroup = false;
-		boolean hasUnclaimedCash = false;
-		boolean hasUnclaimedItem = false;
-		boolean hasUnclaimedSpawner = false;
-		
-		if (Check.hasUnclaimedMessage(uuid))
+		if (evt.getPlayer() != null)
 		{
-			List<UnclaimedMessage> lstUM = Provide.getUnclaimedMessages(uuid);
-			if (lstUM != null)
+			String uuid = evt.getPlayer().getUniqueId().toString();
+			boolean hasUnclaimedGroup = false;
+			boolean hasUnclaimedCash = false;
+			boolean hasUnclaimedItem = false;
+			boolean hasUnclaimedSpawner = false;
+			
+			if (Check.hasUnclaimedMessage(uuid))
 			{
-				for (UnclaimedMessage um : lstUM)
+				List<UnclaimedMessage> lstUM = Provide.getUnclaimedMessages(uuid);
+				if (lstUM != null)
 				{
-					Alert.Player(um.getPlayerMessage().replace("<%player%>", evt.getPlayer().getName()), evt.getPlayer(), true);
-					if (!Main.getInstance().getDatabase().claimMessage(um.getMessageID(), uuid))
+					for (UnclaimedMessage um : lstUM)
 					{
-						Alert.Log("Player Join", "Unexpected error marking donation message as read");
+						Alert.Player(um.getPlayerMessage().replace("<%player%>", evt.getPlayer().getName()), evt.getPlayer(), true);
+						if (!Main.getInstance().getDatabase().claimMessage(um.getMessageID(), uuid))
+						{
+							Alert.Log("Player Join", "Unexpected error marking donation message as read");
+						}
 					}
 				}
 			}
-		}
-		if (Main.getInstance().HasVault())
-		{
-			if (Check.hasUnclaimedGroup(uuid))
+			if (Main.getInstance().HasVault())
 			{
-				hasUnclaimedGroup = true;
+				if (Check.hasUnclaimedGroup(uuid))
+				{
+					hasUnclaimedGroup = true;
+				}
+				if (Check.hasUnclaimedCash(uuid))
+				{
+					hasUnclaimedCash = true;
+				}
 			}
-			if (Check.hasUnclaimedCash(uuid))
+			if (Check.hasUnclaimedItem(uuid))
 			{
-				hasUnclaimedCash = true;
+				hasUnclaimedItem = true;
+			}
+			if (Check.hasUnclaimedSpawner(uuid))
+			{
+				hasUnclaimedSpawner = true;
+			}
+			if (hasUnclaimedGroup || hasUnclaimedCash || hasUnclaimedItem || hasUnclaimedSpawner)
+			{
+				Alert.Player("You have unclaimed donor rewards.  Type " + ChatColor.AQUA + "/donor claim" + ChatColor.RESET + " to claim them!", evt.getPlayer(), true);
 			}
 		}
-		if (Check.hasUnclaimedItem(uuid))
-		{
-			hasUnclaimedItem = true;
-		}
-		if (Check.hasUnclaimedSpawner(uuid))
-		{
-			hasUnclaimedSpawner = true;
-		}
-		if (hasUnclaimedGroup || hasUnclaimedCash || hasUnclaimedItem || hasUnclaimedSpawner)
-		{
-			Alert.Player("You have unclaimed donor rewards.  Type " + ChatColor.AQUA + "/donor claim" + ChatColor.RESET + " to claim them!", evt.getPlayer(), true);
-		}
+		
+
+		
 	}
 }

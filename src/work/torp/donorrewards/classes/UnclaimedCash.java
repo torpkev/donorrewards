@@ -30,4 +30,5 @@ public class UnclaimedCash {
     public void setCashAmount(int amt) {
     	this.amt = amt;
     }
+    
 }

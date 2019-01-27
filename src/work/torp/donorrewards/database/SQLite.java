@@ -16,17 +16,6 @@ public class SQLite extends Database{
         super(instance);
         dbname = plugin.getConfig().getString("SQLite.Filename", "DonorRewards"); 
     }
-
-    public String broken_spawner = "CREATE TABLE IF NOT EXISTS broken_spawner (" + 
-    		"`broken_spawner_id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
-    		"`spawner_id` INTEGER NOT NULL, " +
-    		"`broken_by_uuid` varchar(50) NOT NULL, " +
-			"`world` varchar (100) NOT NULL, " +
-			"`x` INTEGER NOT NULL, " +
-			"`y` INTEGER NOT NULL, " +
-			"`z` INTEGER NOT NULL, " +
-			"`broken_dtime`	timestamp NOT NULL " +
-			");";
    
     public String cash = "CREATE TABLE IF NOT EXISTS cash (" + 
     		"`cash_id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
@@ -58,6 +47,7 @@ public class SQLite extends Database{
     		"`item_id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
     		"`donation_id` INTEGER NOT NULL, " +
     		"`uuid`	varchar(50) NOT NULL, " +
+    		"`name` varchar(250) NOT NULL, " +
     		"`item_name` varchar(250) NOT NULL, " +
     		"`item_cnt`	INTEGER NOT NULL, " +
     		"`tag` boolean NOT NULL, " +
@@ -76,18 +66,6 @@ public class SQLite extends Database{
     		"`claimed_dtime` timestamp " +
     		");";
     
-    public String placed_spawner = "CREATE TABLE IF NOT EXISTS placed_spawner (" + 
-    		"`placed_spawner_id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
-    		"`spawner_id` INTEGER NOT NULL, " +
-    		"`placed_by_uuid` varchar(50) NOT NULL, " +
-    		"`world` varchar(100) NOT NULL, " +
-    		"`x` INTEGER NOT NULL, " +
-    		"`y` INTEGER NOT NULL, " +
-    		"`z` INTEGER NOT NULL, " +
-    		"`placed_dtime`	timestamp NOT NULL, " +
-    		"`is_removed` boolean NOT NULL " +
-    		");";
-    
     public String spawner = "CREATE TABLE IF NOT EXISTS spawner (" + 
     		"`spawner_id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
     		"`donation_id` INTEGER NOT NULL, " +
@@ -98,7 +76,31 @@ public class SQLite extends Database{
     		"`claimed_by_uuid` varchar(50), " +
     		"`claimed_dtime` timestamp " +
     		");";
+ 
+    public String broken_spawner = "CREATE TABLE IF NOT EXISTS broken_spawner (" + 
+    		"`broken_spawner_id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
+    		"`spawner_id` INTEGER NOT NULL, " +
+    		"`entity_type` VARCHAR(100) NOT NULL, " +
+    		"`broken_by_uuid` varchar(50) NOT NULL, " +
+			"`world` varchar (100) NOT NULL, " +
+			"`x` INTEGER NOT NULL, " +
+			"`y` INTEGER NOT NULL, " +
+			"`z` INTEGER NOT NULL, " +
+			"`broken_dtime`	timestamp NOT NULL " +
+			");";
     
+    public String placed_spawner = "CREATE TABLE IF NOT EXISTS placed_spawner (" + 
+    		"`placed_spawner_id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
+    		"`spawner_id` INTEGER NOT NULL, " +
+    		"`entity_type` VARCHAR(100) NOT NULL, " +
+    		"`placed_by_uuid` varchar(50) NOT NULL, " +
+    		"`world` varchar(100) NOT NULL, " +
+    		"`x` INTEGER NOT NULL, " +
+    		"`y` INTEGER NOT NULL, " +
+    		"`z` INTEGER NOT NULL, " +
+    		"`placed_dtime`	timestamp NOT NULL, " +
+    		"`is_removed` boolean NOT NULL " +
+    		");";
 
     // SQL creation stuff, You can leave the blow stuff untouched.
     public Connection getSQLConnection() {

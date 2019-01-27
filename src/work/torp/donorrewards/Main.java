@@ -4,10 +4,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -30,12 +34,21 @@ import work.torp.donorrewards.commands.Donor;
 import work.torp.donorrewards.Main;
 import work.torp.donorrewards.database.Database;
 import work.torp.donorrewards.database.SQLite;
+import work.torp.donorrewards.events.BlockEvents;
+import work.torp.donorrewards.events.CreatureSpawnEvents;
+import work.torp.donorrewards.events.InventoryEvents;
 import work.torp.donorrewards.events.PlayerEvents;
 import work.torp.donorrewards.scheduled.PlayerNag;
 
 public class Main extends JavaPlugin {
 	
-	// Main
+	public static HashMap<UUID, Integer> PlayerInvslot = new HashMap<UUID, Integer>();
+	
+	public interface IGUI extends InventoryHolder{
+	    public void onGUIClick(Player whoClicked, int slot, ItemStack clickedItem);
+	}
+	
+	// Main6
 	private static Main instance;
     public static Main getInstance() {
 		return instance;
@@ -173,8 +186,7 @@ public class Main extends JavaPlugin {
 	    		if (unclaimedItems != null) {
 	    			for (UnclaimedItem i : unclaimedItems)
 		    		{
-	    				if (i.getItemID() != ui.getItemID())
-		    			{
+	    				if (i.getItemID() != ui.getItemID()) {
 	    					lstUI.add(i);
 		    			}
 		    		}
@@ -204,7 +216,7 @@ public class Main extends JavaPlugin {
 			Alert.DebugLog("Main", "AddUnclaimedSpawner", "Unexpected Error - " + ex.getMessage());  
 		}
     } 
-    public void RemoveAddUnclaimedItem(UnclaimedSpawner us)
+    public void RemoveUnclaimedSpawner(UnclaimedSpawner us)
     {
     	try {
 	    	List<UnclaimedSpawner> lstUS = new ArrayList<UnclaimedSpawner>();
@@ -373,7 +385,7 @@ public class Main extends JavaPlugin {
 	    		if (placedSpawner != null) {
 	    			for (PlacedSpawner i : placedSpawner)
 		    		{
-	    				if (i.getSpawnerID() != ps.getSpawnerID())
+	    				if (i.getPlacedSpawnerID() != ps.getPlacedSpawnerID())
 		    			{
 	    					lstPS.add(i);
 		    			}
@@ -442,6 +454,9 @@ public class Main extends JavaPlugin {
 						
 						// display_name
 						String displayName = Main.getInstance().getConfig().getString("rank." + rank + ".name");
+						
+						Alert.DebugLog("Main", "loadConfig", "Rank: " + displayName);
+						
 						if (displayName != null)
 						{
 							r.setDisplayName(displayName);
@@ -529,109 +544,129 @@ public class Main extends JavaPlugin {
 							Alert.Log("Main.loadConfig", "cash value for rank " + rank + " not found, using default of 0");
 						}
 						// items
-						Set<String> lstItems = Main.getInstance().getConfig().getConfigurationSection("rank." + rank + ".items").getKeys(false);
-						if (lstItems != null)
+						Alert.DebugLog("Main", "loadConfig", "Rank: " + displayName + " - Checking Items");
+						if (getConfig().getConfigurationSection("rank." + rank + ".items") != null)
 						{
-							if (lstItems.size() > 0)
+							Set<String> lstItems = Main.getInstance().getConfig().getConfigurationSection("rank." + rank + ".items").getKeys(false);
+							Alert.DebugLog("Main", "loadConfig", "Rank: " + displayName + " - Checking Items 2");
+							if (lstItems != null)
 							{
-								List<Item> lstNewItems = new ArrayList<Item>();
-								for (String item : lstItems)
+								if (lstItems.size() > 0)
 								{
-									try
+									List<Item> lstNewItems = new ArrayList<Item>();
+									for (String item : lstItems)
 									{
-										Material m = Material.valueOf(item);
-										if (m != null)
+										try
 										{
-											Item i = new Item();
-											i.setMaterial(m);
-											// count
-											String s_item_cnt = Main.getInstance().getConfig().getString("rank." + rank + ".items." + item + ".count");
-											if (s_item_cnt != null) {
-												int item_cnt = 0; // Default to 0
-												try{
-													item_cnt = Integer.parseInt(s_item_cnt);
-													i.setItemCount(item_cnt);
-												} 
-												catch (NumberFormatException ex) {
-													Alert.Log("Main.loadConfig", "count value for rank " + rank + " - Item: " + item + " is invalid, using default of 0");
+											Material m = Material.valueOf(item);
+											if (m != null)
+											{
+												Item i = new Item();
+												String s_name = Main.getInstance().getConfig().getString("rank." + rank + ".items." + item + ".name");
+												if (s_name != null)
+												{
+													i.setName(s_name);
 												}
-											} else {
-												Alert.Log("Main.loadConfig", "count value for rank " + rank + " - Item: " + item + " not found, using default of 0");
-											}
-											// tag
-											String s_item_tag = Main.getInstance().getConfig().getString("rank." + rank + ".items." + item + ".tag");
-											i.setTagItem(false); // Default to false
-									    	if (s_item_tag != null) {
-									    		if (s_item_tag.equalsIgnoreCase("true")) {
-									    			i.setTagItem(true);
-												} else if (s_item_tag.equalsIgnoreCase("false")) {
-													i.setTagItem(false);
+												i.setMaterial(m);
+												// count
+												String s_item_cnt = Main.getInstance().getConfig().getString("rank." + rank + ".items." + item + ".count");
+												if (s_item_cnt != null) {
+													int item_cnt = 0; // Default to 0
+													try{
+														item_cnt = Integer.parseInt(s_item_cnt);
+														i.setItemCount(item_cnt);
+													} 
+													catch (NumberFormatException ex) {
+														Alert.Log("Main.loadConfig", "count value for rank " + rank + " - Item: " + item + " is invalid, using default of 0");
+													}
 												} else {
-													Alert.Log("Main.loadConfig", "tag value for rank " + rank + " - Item: " + item + " is invalid, using default of false");
+													Alert.Log("Main.loadConfig", "count value for rank " + rank + " - Item: " + item + " not found, using default of 0");
 												}
-									    	} else {
-									    		Alert.Log("Main.loadConfig", "tag value for rank " + rank + " - Item: " + item + " not found, using default of false");
-									    	}												
-									    	lstNewItems.add(i);
-										}
-										r.setItems(lstNewItems);
-									} 
-									catch (Exception ex)
-									{
-										Alert.Log("Main.loadConfig", "Material value for rank " + rank + " - Item: " + item + " is invalid, disregarding.");
-									}
-								}
-							} else {
-								r.setItems(new ArrayList<Item>());
-							}
-						} else {
-							r.setItems(new ArrayList<Item>());
-						}
-						// spawners
-						Set<String> lstSpawners = Main.getInstance().getConfig().getConfigurationSection("rank." + rank + ".spawners").getKeys(false);
-						if (lstSpawners != null)
-						{
-							if (lstSpawners.size() > 0)
-							{
-								List<Spawner> lstNewSpawners = new ArrayList<Spawner>();
-								for (String spawner : lstSpawners)
-								{
-									try
-									{
-										EntityType et = EntityType.valueOf(spawner);
-										if (et != null)
+												// tag
+												String s_item_tag = Main.getInstance().getConfig().getString("rank." + rank + ".items." + item + ".tag");
+												i.setTagItem(false); // Default to false
+										    	if (s_item_tag != null) {
+										    		if (s_item_tag.equalsIgnoreCase("true")) {
+										    			i.setTagItem(true);
+													} else if (s_item_tag.equalsIgnoreCase("false")) {
+														i.setTagItem(false);
+													} else {
+														Alert.Log("Main.loadConfig", "tag value for rank " + rank + " - Item: " + item + " is invalid, using default of false");
+													}
+										    	} else {
+										    		Alert.Log("Main.loadConfig", "tag value for rank " + rank + " - Item: " + item + " not found, using default of false");
+										    	}												
+										    	lstNewItems.add(i);
+											}
+											r.setItems(lstNewItems);
+										} 
+										catch (Exception ex)
 										{
-											Spawner s = new Spawner();
-											s.setEntityType(et);
-											// count
-											String s_spawner_cnt = Main.getInstance().getConfig().getString("rank." + rank + ".spawners." + spawner + ".count");
-											if (s_spawner_cnt != null) {
-												int spawner_cnt = 0; // Default to 0
-												try{
-													spawner_cnt = Integer.parseInt(s_spawner_cnt);
-													s.setSpawnerCount(spawner_cnt);
-												} 
-												catch (NumberFormatException ex) {
-													Alert.Log("Main.loadConfig", "count value for rank " + rank + " - Spawner: " + spawner + " is invalid, using default of 0");
-												}
-											} else {
-												Alert.Log("Main.loadConfig", "count value for rank " + rank + " - Spawner: " + spawner + " not found, using default of 0");
-											}									
-									    	lstNewSpawners.add(s);
+											Alert.Log("Main.loadConfig", "Material value for rank " + rank + " - Item: " + item + " is invalid, disregarding.");
 										}
-										r.setSpawners(lstNewSpawners);
-									} 
-									catch (Exception ex)
-									{
-										Alert.Log("Main.loadConfig", "Entity value for rank " + rank + " - Spawner: " + spawner + " is invalid, disregarding.");
 									}
+								} else {
+									Alert.DebugLog("Main", "loadConfig", "Rank: " + displayName + " - No Items");
+									r.setItems(new ArrayList<Item>());
 								}
 							} else {
+								Alert.DebugLog("Main", "loadConfig", "Rank: " + displayName + " - No Items");
 								r.setItems(new ArrayList<Item>());
 							}
-						} else {
-							r.setItems(new ArrayList<Item>());
 						}
+						
+						// spawners
+						Alert.DebugLog("Main", "loadConfig", "Rank: " + displayName + " - Checking Spawners");
+						if (getConfig().getConfigurationSection("rank." + rank + ".spawners") != null)
+						{
+							Set<String> lstSpawners = Main.getInstance().getConfig().getConfigurationSection("rank." + rank + ".spawners").getKeys(false);
+							if (lstSpawners != null)
+							{
+								if (lstSpawners.size() > 0)
+								{
+									List<Spawner> lstNewSpawners = new ArrayList<Spawner>();
+									for (String spawner : lstSpawners)
+									{
+										try
+										{
+											EntityType et = EntityType.valueOf(spawner);
+											if (et != null)
+											{
+												Spawner s = new Spawner();
+												s.setEntityType(et);
+												// count
+												String s_spawner_cnt = Main.getInstance().getConfig().getString("rank." + rank + ".spawners." + spawner + ".count");
+												if (s_spawner_cnt != null) {
+													int spawner_cnt = 0; // Default to 0
+													try{
+														spawner_cnt = Integer.parseInt(s_spawner_cnt);
+														s.setSpawnerCount(spawner_cnt);
+													} 
+													catch (NumberFormatException ex) {
+														Alert.Log("Main.loadConfig", "count value for rank " + rank + " - Spawner: " + spawner + " is invalid, using default of 0");
+													}
+												} else {
+													Alert.Log("Main.loadConfig", "count value for rank " + rank + " - Spawner: " + spawner + " not found, using default of 0");
+												}									
+										    	lstNewSpawners.add(s);
+											}
+											r.setSpawners(lstNewSpawners);
+										} 
+										catch (Exception ex)
+										{
+											Alert.Log("Main.loadConfig", "Entity value for rank " + rank + " - Spawner: " + spawner + " is invalid, disregarding.");
+										}
+									}
+								} else {
+									Alert.DebugLog("Main", "loadConfig", "Rank: " + displayName + " - No Spawners");
+									r.setItems(new ArrayList<Item>());
+								}
+							} else {
+								Alert.DebugLog("Main", "loadConfig", "Rank: " + displayName + " - No Spawners");
+								r.setItems(new ArrayList<Item>());
+							}
+						}
+						
 						Main.hmRanks.put(rank, r);
 					}
 				}
@@ -644,7 +679,10 @@ public class Main extends JavaPlugin {
     
     public void loadEventListeners() {
 		Alert.VerboseLog("Main", "Starting Event Listeners");	
-		try {	
+		try {
+			Bukkit.getPluginManager().registerEvents(new BlockEvents(), this);
+			Bukkit.getPluginManager().registerEvents(new CreatureSpawnEvents(), this);
+			Bukkit.getPluginManager().registerEvents(new InventoryEvents(), this);
 			Bukkit.getPluginManager().registerEvents(new PlayerEvents(), this);
 		} catch (Exception ex) {
 			Alert.Log("Load Event Listeners", "Unexpected Error - " + ex.getMessage());  
@@ -671,7 +709,7 @@ public class Main extends JavaPlugin {
     	} else {
     		Alert.DebugLog("Main", "loadFromDatabase", "Donations list is null");
     	}
-    	Alert.Log("Main.loadFromDatabase", "Getting Unclaimed Cash");
+    	Alert.VerboseLog("Main.loadFromDatabase", "Getting Unclaimed Cash");
     	this.db.getUnclaimedCash();
     	if (unclaimedCash != null)
     	{
@@ -679,7 +717,7 @@ public class Main extends JavaPlugin {
     	} else {
     		Alert.DebugLog("Main", "loadFromDatabase", "Unclaimed Cash list is null");
     	}
-    	Alert.Log("Main.loadFromDatabase", "Getting Unclaimed Groups");
+    	Alert.VerboseLog("Main.loadFromDatabase", "Getting Unclaimed Groups");
     	this.db.getUnclaimedGroups();
     	if (unclaimedGroup != null)
     	{
@@ -687,7 +725,7 @@ public class Main extends JavaPlugin {
     	} else {
     		Alert.DebugLog("Main", "loadFromDatabase", "Unclaimed Groups list is null");
     	}
-    	Alert.Log("Main.loadFromDatabase", "Getting Unclaimed Items");
+    	Alert.VerboseLog("Main.loadFromDatabase", "Getting Unclaimed Items");
     	this.db.getUnclaimedItem();
     	if (unclaimedItems != null)
     	{
@@ -695,7 +733,7 @@ public class Main extends JavaPlugin {
     	} else {
     		Alert.DebugLog("Main", "loadFromDatabase", "Unclaimed Items list is null");
     	}
-    	Alert.Log("Main.loadFromDatabase", "Getting Unclaimed Spawners");
+    	Alert.VerboseLog("Main.loadFromDatabase", "Getting Unclaimed Spawners");
     	this.db.getUnclaimedSpawner();
     	if (unclaimedSpawner != null)
     	{
@@ -703,7 +741,7 @@ public class Main extends JavaPlugin {
     	} else {
     		Alert.DebugLog("Main", "loadFromDatabase", "Unclaimed Spawner list is null");
     	}
-    	Alert.Log("Main.loadFromDatabase", "Getting Placed Spawners");
+    	Alert.VerboseLog("Main.loadFromDatabase", "Getting Placed Spawners");
     	this.db.getPlacedSpawner();
     	if (placedSpawner != null)
     	{
@@ -745,7 +783,7 @@ public class Main extends JavaPlugin {
 	        Alert.DebugLog("Main", "onEnable", "Loading Vault");
 			if (setupEconomy() && setupPermissions())
 			{
-				Alert.Log("Main", "Vault dependency loaded");
+				Alert.VerboseLog("Main", "Vault dependency loaded");
 	        	hasVault = true;
 			} else {
 	            Alert.Log("Main", "No Vault dependency found - Unable to process any cash rewards or process groups");

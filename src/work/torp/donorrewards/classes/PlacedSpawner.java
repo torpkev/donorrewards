@@ -3,10 +3,12 @@ package work.torp.donorrewards.classes;
 import java.sql.Timestamp;
 
 import org.bukkit.Location;
+import org.bukkit.entity.EntityType;
 
 public class PlacedSpawner {
 	int placedSpawnerID;
 	int spawnerID;
+	EntityType entityType;
 	String placedByUUID;
 	Location placedLocation;
 	Timestamp placedDateTime;
@@ -22,6 +24,12 @@ public class PlacedSpawner {
 	}
 	public void setSpawnerID(int spawnerID) {
 		this.spawnerID = spawnerID;
+	}
+	public EntityType getEntityType() {
+		return entityType;
+	}
+	public void setEntityType(EntityType entityType) {
+		this.entityType = entityType;
 	}
     public String getPlacedByUUID() {
     	return placedByUUID;
